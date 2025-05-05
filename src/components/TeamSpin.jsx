@@ -71,16 +71,24 @@ function TeamSpin() {
   };
 
   const handleReset = async () => {
+    const currentTeamsSnap = await getDocs(collection(db, 'teams'));
+    const currentNames = currentTeamsSnap.docs.map(doc => doc.data().name);
+  
     const soldSnapshot = await getDocs(collection(db, 'soldTeams'));
-    const soldTeams = soldSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-
-    for (const team of soldTeams) {
-      await addDoc(collection(db, 'teams'), { name: team.name });
-      await deleteDoc(doc(db, 'soldTeams', team.id));
+    for (const docSnap of soldSnapshot.docs) {
+      const { name } = docSnap.data();
+  
+      if (!currentNames.includes(name)) {
+        await addDoc(collection(db, 'teams'), { name });
+      }
+  
+      await deleteDoc(doc(db, 'soldTeams', docSnap.id));
     }
+  
     setHistory([]);
     setSelectedTeam(null);
   };
+  
 
   return (
     <div className="relative min-h-screen flex flex-col items-center justify-center p-4">
