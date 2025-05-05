@@ -1,24 +1,38 @@
 const Controls = ({ onStart, onSold, onUndo, selectedPlayer, spinning }) => {
     return (
-      <div className="flex flex-col items-center gap-4 mt-6">
+      <div className="flex flex-col items-center gap-4 mt-8">
         <button
           onClick={onStart}
-          disabled={spinning}
-          className="bg-orange-500 text-white px-4 py-2 rounded shadow hover:bg-orange-600 disabled:opacity-50"
+          disabled={spinning || selectedPlayer}
+          className={`px-8 py-3 rounded-lg shadow-lg transition-all duration-200 text-lg font-semibold ${
+            spinning || selectedPlayer
+              ? 'bg-gray-400 cursor-not-allowed'
+              : 'bg-orange-500 hover:bg-orange-600 active:scale-95 text-white'
+          }`}
         >
-          Start
+          {spinning ? 'Spinning...' : 'Start'}
         </button>
+        
         <button
           onClick={onSold}
           disabled={!selectedPlayer || spinning}
-          className="bg-red-500 text-white px-4 py-2 rounded shadow hover:bg-red-600 disabled:opacity-50"
+          className={`px-8 py-3 rounded-lg shadow-lg transition-all duration-200 text-lg font-semibold ${
+            !selectedPlayer || spinning
+              ? 'bg-gray-400 cursor-not-allowed'
+              : 'bg-red-500 hover:bg-red-600 active:scale-95 text-white'
+          }`}
         >
           Sold
         </button>
+        
         <button
           onClick={onUndo}
           disabled={spinning}
-          className="bg-yellow-400 text-white px-4 py-2 rounded shadow hover:bg-yellow-500 disabled:opacity-50"
+          className={`px-8 py-3 rounded-lg shadow-lg transition-all duration-200 text-lg font-semibold ${
+            spinning
+              ? 'bg-gray-400 cursor-not-allowed'
+              : 'bg-yellow-400 hover:bg-yellow-500 active:scale-95 text-white'
+          }`}
         >
           Undo
         </button>
@@ -27,5 +41,5 @@ const Controls = ({ onStart, onSold, onUndo, selectedPlayer, spinning }) => {
   };
   
   export default Controls;
-  
-  
+    
+    
