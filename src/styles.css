@@ -4,3 +4,13 @@ body {
     background-color: #fffaf5;
     color: #1f2937;
   }
+
+  @keyframes spin-slow {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(1800deg); } /* 5 full spins */
+  }
+  
+  .animate-spin-slow {
+    animation: spin-slow 5s ease-out;
+  }
+  
