@@ -4,16 +4,17 @@ import Controls from './components/Controls';
 import logo from './assets/Main Logo.png';
 import Confetti from 'react-confetti';
 
-const initialPlayers = [
-  { id: '1', name: 'Player 1' },
-  { id: '2', name: 'Player 2' },
-  { id: '3', name: 'Player 3' },
-  { id: '4', name: 'Player 4' },
-  { id: '5', name: 'Player 5' },
-];
+import db from './firebase';
+import {
+  collection,
+  onSnapshot,
+  addDoc,
+  deleteDoc,
+  doc
+} from 'firebase/firestore';
 
 function App() {
-  const [players, setPlayers] = useState(initialPlayers);
+  const [players, setPlayers] = useState([]);
   const [spinning, setSpinning] = useState(false);
   const [selectedPlayer, setSelectedPlayer] = useState(null);
   const [history, setHistory] = useState([]);
@@ -25,6 +26,21 @@ function App() {
     height: window.innerHeight,
   });
 
+  // Real-time listener for players
+  useEffect(() => {
+    console.log("Players in Firestore:", players);
+    const unsubscribe = onSnapshot(collection(db, "players"), (snapshot) => {
+      const playerList = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      setPlayers(playerList);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  // Confetti sizing
   useEffect(() => {
     const handleResize = () => {
       setWindowSize({
@@ -43,44 +59,48 @@ function App() {
     setShowPopup(false);
     setShowConfetti(false);
     setShowCelebration(false);
-    
-    // Generate a random number of full rotations (between 5 and 8)
-    const fullRotations = Math.floor(Math.random() * 4) + 5;
-    
-    // Select a random player after a short delay
+
     setTimeout(() => {
       const randomIndex = Math.floor(Math.random() * players.length);
       const randomPlayer = players[randomIndex];
       setSelectedPlayer(randomPlayer);
     }, 100);
-    
-    // Show popup after 5 seconds of spinning
+
     setTimeout(() => {
       setSpinning(false);
       setShowPopup(true);
     }, 5000);
   };
 
-  const handleSold = () => {
+  const handleSold = async () => {
     if (!selectedPlayer) return;
+
     setShowPopup(false);
     setShowConfetti(true);
     setShowCelebration(true);
-    
-    // After 2 seconds, complete the sale and show wheel
-    setTimeout(() => {
+
+    setTimeout(async () => {
       setShowConfetti(false);
       setShowCelebration(false);
       setHistory(prev => [...prev, selectedPlayer]);
-      setPlayers(prev => prev.filter(p => p.id !== selectedPlayer.id));
+
+      // Save to soldPlayers
+      await addDoc(collection(db, "soldPlayers"), selectedPlayer);
+
+      // Remove from players
+      await deleteDoc(doc(db, "players", selectedPlayer.id));
+
       setSelectedPlayer(null);
     }, 2000);
   };
 
-  const handleUndo = () => {
+  const handleUndo = async () => {
     if (history.length === 0) return;
     const lastSold = history[history.length - 1];
-    setPlayers(prev => [...prev, lastSold]);
+
+    // Add back to players
+    await addDoc(collection(db, "players"), { name: lastSold.name });
+
     setHistory(prev => prev.slice(0, -1));
   };
 
@@ -104,21 +124,21 @@ function App() {
         className="absolute opacity-10 w-full max-w-[600px] top-20 left-1/2 -translate-x-1/2"
       />
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,165,0,0.1)_0%,transparent_70%)] animate-pulse"></div>
-      
+
       {/* Main Content */}
       <div className="relative z-10 flex flex-col items-center justify-center min-h-screen p-4">
         <h1 className="text-4xl font-bold text-orange-700 mb-8">
           Auction Wheel
         </h1>
-        
+
         {!showCelebration && (
-          <Wheel 
-            players={players} 
-            selectedPlayer={selectedPlayer} 
-            spinning={spinning} 
+          <Wheel
+            players={players}
+            selectedPlayer={selectedPlayer}
+            spinning={spinning}
           />
         )}
-        
+
         {showCelebration && selectedPlayer && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div className="bg-white p-8 rounded-lg shadow-2xl transform scale-110 transition-transform duration-300">
@@ -134,7 +154,7 @@ function App() {
             </div>
           </div>
         )}
-        
+
         {showPopup && selectedPlayer && !showCelebration && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div className="bg-white p-8 rounded-lg shadow-2xl">
@@ -153,17 +173,17 @@ function App() {
             </div>
           </div>
         )}
-        
+
         {!showCelebration && (
-          <Controls 
-            onStart={handleStart} 
-            onSold={handleSold} 
-            onUndo={handleUndo} 
-            selectedPlayer={selectedPlayer} 
-            spinning={spinning} 
+          <Controls
+            onStart={handleStart}
+            onSold={handleSold}
+            onUndo={handleUndo}
+            selectedPlayer={selectedPlayer}
+            spinning={spinning}
           />
         )}
-        
+
         {!showCelebration && (
           <div className="mt-6 text-lg font-medium text-orange-700">
             Remaining Players: {players.length}
